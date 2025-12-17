@@ -59,6 +59,18 @@ Browser / Client
 * **Storage:** Persistent Volumes (PVC)
 * **Secrets:** Kubernetes Secrets
 
+ ---
+ 
+ ## ⚙️ Environment & Versions
+
+- Operating System: Windows 11
+- Docker Version: Docker Desktop (latest)
+- Kubernetes Version: v1.30.0
+- Minikube Version: v1.33.1
+- Python Version: 3.9
+- MongoDB Version: 6
+
+
 ---
 
 ## 📁 Project Structure
