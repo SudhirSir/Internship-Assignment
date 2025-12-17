@@ -232,6 +232,9 @@ curl http://localhost:5000/data
 This project demonstrates a **complete, production-style backend system** deployed on Kubernetes.
 It highlights containerization, orchestration, persistence, and secure communication between services.
 
+Note: All Screenshots are attached in the screenshots/ folder.
+
+
 ---
 
 ## 👤 Author
