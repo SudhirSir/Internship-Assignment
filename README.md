@@ -1,52 +1,17 @@
 ## 📌 Project Overview
 
-This project demonstrates an **end-to-end containerized backend system** using **Flask**, **MongoDB**, **Docker**, and **Kubernetes (Minikube)**.
+This project demonstrates a **production-style backend deployment** using **Flask**, **MongoDB**, **Docker**, and **Kubernetes (Minikube)**.
 
-The goal was to:
+The objective of this assignment was to:
 
-* Containerize a Flask REST API
-* Deploy it on Kubernetes with multiple replicas
-* Deploy MongoDB as a **StatefulSet** with persistent storage
-* Secure database credentials using **Kubernetes Secrets**
-* Expose the application externally using a **NodePort Service**
-* Validate end-to-end communication between Flask and MongoDB
-
-This setup closely resembles **real-world production architecture**.
-
----
-
-## 🏗️ Architecture Overview (Text Diagram)
-
-```
-Browser / Client
-       |
-       |  NodePort (30007)
-       v
-+---------------------+
-|  Flask Service      |
-|  (NodePort)         |
-+---------------------+
-          |
-          | Kubernetes Service (DNS)
-          v
-+---------------------+
-| Flask Deployment    |
-| 2 Replicas          |
-+---------------------+
-          |
-          | Internal ClusterIP
-          v
-+---------------------+
-| MongoDB Service     |
-| (Headless)          |
-+---------------------+
-          |
-          v
-+---------------------+
-| MongoDB StatefulSet |
-| Persistent Volume   |
-+---------------------+
-```
+* Build a Flask REST API
+* Connect it with MongoDB using authentication
+* Containerize the application using Docker
+* Deploy both services on Kubernetes
+* Use persistent storage for MongoDB
+* Apply resource limits and autoscaling
+* Expose the application externally
+* Document and verify the complete setup
 
 ---
 
@@ -57,19 +22,18 @@ Browser / Client
 * **Containerization:** Docker
 * **Orchestration:** Kubernetes (Minikube)
 * **Storage:** Persistent Volumes (PVC)
-* **Secrets:** Kubernetes Secrets
+* **Autoscaling:** Horizontal Pod Autoscaler (HPA)
 
- ---
- 
- ## ⚙️ Environment & Versions
+---
 
-- Operating System: Windows 11
-- Docker Version: Docker Desktop (latest)
-- Kubernetes Version: v1.30.0
-- Minikube Version: v1.33.1
-- Python Version: 3.9
-- MongoDB Version: 6
+## ⚙️ Environment & Versions
 
+* Operating System: Windows 11
+* Docker Version: Docker Desktop
+* Kubernetes Version: v1.30.0
+* Minikube Version: v1.33.x
+* Python Version: 3.9
+* MongoDB Version: 6
 
 ---
 
@@ -89,62 +53,81 @@ flask-mongodb-app/
 │   ├── mongo-pvc.yaml
 │   ├── mongo-service.yaml
 │   ├── mongo-statefulset.yaml
+│   └── hpa.yaml
+│
+├── screenshots/
+│   ├── pods.png
+│   ├── services.png
+│   ├── browser-output.png
+│   └── api-data.png
 │
 └── README.md
 ```
 
 ---
 
-## 🚀 Setup & Deployment Steps
+## 🏗️ Architecture Overview
 
-### 1️⃣ Build Docker Image
-
-```bash
-docker build -t sudhir/flask-mongo-app:latest .
 ```
-
-### 2️⃣ Start Minikube
-
-```bash
-minikube start --driver=docker
-```
-
-### 3️⃣ Load Image into Minikube
-
-```bash
-minikube image load sudhir/flask-mongo-app:latest
+Client / Browser
+        |
+        |  NodePort (30007)
+        v
+Flask Service (NodePort)
+        |
+        v
+Flask Deployment (2+ replicas)
+        |
+        v
+MongoDB Service (ClusterIP / DNS)
+        |
+        v
+MongoDB StatefulSet + PVC
 ```
 
 ---
 
-## 🐳 Kubernetes Deployment
+## 🚀 Application Features
 
-### 🔹 Deploy Flask Application
+* `/` endpoint – basic response with timestamp
+* `/data` endpoint
 
-```bash
-kubectl apply -f k8s/flask-deployment.yaml
-kubectl apply -f k8s/flask-service.yaml
-```
+  * `POST` → insert data into MongoDB
+  * `GET` → retrieve data from MongoDB
 
-### 🔹 Deploy MongoDB
+---
 
-```bash
-kubectl apply -f k8s/mongo-secret.yaml
-kubectl apply -f k8s/mongo-pvc.yaml
-kubectl apply -f k8s/mongo-service.yaml
-kubectl apply -f k8s/mongo-statefulset.yaml
-```
+## 🐳 Dockerization
+
+The Flask application is containerized using a Dockerfile based on `python:3.9-slim`.
+
+Docker image is built locally and loaded into Minikube for Kubernetes deployment.
+
+---
+
+## ☸️ Kubernetes Deployment
+
+### 🔹 Flask Application
+
+* Deployed using **Deployment**
+* Runs with **minimum 2 replicas**
+* Resource requests and limits configured
+* Exposed using **NodePort Service**
+
+### 🔹 MongoDB
+
+* Deployed using **StatefulSet**
+* Authentication enabled using **Kubernetes Secrets**
+* Persistent storage provided using **PVC**
+* Resource requests and limits configured
 
 ---
 
 ## 🔐 MongoDB Authentication
 
-MongoDB credentials are stored securely using **Kubernetes Secrets**:
+MongoDB credentials are stored securely using Kubernetes Secrets.
 
-* Username: `admin`
-* Password: `password123`
-
-Flask connects using:
+Connection string used by Flask:
 
 ```
 mongodb://admin:password123@mongo-service:27017/flask_db
@@ -152,51 +135,65 @@ mongodb://admin:password123@mongo-service:27017/flask_db
 
 ---
 
-## 🌐 Access the Application
+## 🌐 Kubernetes DNS Resolution
 
-### Option 1: Using Minikube IP
+Kubernetes provides an internal DNS system for service discovery.
 
-```bash
-minikube ip
-```
+In this project:
 
-Open in browser:
+* Flask connects to MongoDB using the service name `mongo-service`
+* Kubernetes automatically resolves this name to the MongoDB pod IP
+* This ensures reliable communication even if pods restart or IPs change
 
-```
-http://<minikube-ip>:30007
-```
-
-### Option 2: Port Forwarding
-
-```bash
-kubectl port-forward service/flask-service 5000:5000
-```
-
-Browser:
-
-```
-http://localhost:5000
-```
+This DNS-based communication is a core Kubernetes feature.
 
 ---
 
-## 🧪 API Testing
+## 📈 Horizontal Pod Autoscaling (HPA)
 
-### Insert Data
+Horizontal Pod Autoscaler is configured for the Flask application.
 
-```bash
-curl -X POST -H "Content-Type: application/json" \
--d '{"name":"Sudhir","stage":"Docker network working"}' \
-http://localhost:5000/data
-```
+### Configuration:
 
-### Fetch Data
+* Minimum replicas: 2
+* Maximum replicas: 5
+* CPU utilization threshold: 70%
 
-```bash
-curl http://localhost:5000/data
-```
+When CPU usage exceeds 70%, Kubernetes automatically scales up the Flask pods.
+When load decreases, pods are scaled down.
 
-### Sample Output
+This improves availability and efficient resource usage.
+
+---
+
+## 📊 Resource Requests & Limits
+
+Both Flask and MongoDB have CPU and memory constraints configured.
+
+### MongoDB Example:
+
+* Requests:
+
+  * CPU: 200m
+  * Memory: 256Mi
+* Limits:
+
+  * CPU: 500m
+  * Memory: 512Mi
+
+This prevents resource starvation and ensures stable scheduling.
+
+---
+
+## 🧪 Testing & Verification
+
+* Pods status verified using `kubectl get pods`
+* Services verified using `kubectl get svc`
+* Application accessed via browser using NodePort
+* API tested using `/data` endpoint
+* MongoDB connectivity verified end-to-end
+
+Sample API response:
 
 ```json
 [
@@ -209,43 +206,35 @@ curl http://localhost:5000/data
 
 ---
 
-## 💡 Key Kubernetes Concepts Demonstrated
+## 📸 Screenshots
 
-* **Deployment:** Flask runs with multiple replicas
-* **Service (NodePort):** External access
-* **StatefulSet:** MongoDB with stable identity
-* **Persistent Volumes:** Data survives pod restarts
-* **Secrets:** Secure credential management
-* **Internal DNS:** Service-based communication
+Screenshots demonstrating successful deployment are included:
 
----
+* Pods running (Flask + MongoDB)
+* Services configuration
+* Browser access
+* API response from `/data`
 
-## 🎯 Why StatefulSet for MongoDB?
-
-* MongoDB is **stateful**
-* Needs stable network identity
-* Requires persistent storage
-* StatefulSet ensures ordered startup and stable volumes
+All screenshots are available in the `screenshots/` folder.
 
 ---
 
-## 📈 Learning Outcomes
+## 🎯 Key Learnings
 
-* Real-world Kubernetes deployment workflow
-* Debugging image pull issues in Minikube
-* Understanding service discovery via Kubernetes DNS
-* Secure application design using Secrets
-* Production-style container orchestration
+* Containerizing backend applications
+* Deploying stateful and stateless services on Kubernetes
+* Using StatefulSets with persistent storage
+* Managing secrets securely
+* Implementing autoscaling
+* Debugging Kubernetes immutability constraints
+* Production-style deployment practices
 
 ---
 
 ## 🏁 Conclusion
 
-This project demonstrates a **complete, production-style backend system** deployed on Kubernetes.
-It highlights containerization, orchestration, persistence, and secure communication between services.
-
-Note: All Screenshots are attached in the screenshots/ folder.
-
+This project implements a complete, production-style backend system using Docker and Kubernetes.
+All assignment requirements have been implemented, tested, and documented.
 
 ---
 
