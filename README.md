@@ -164,7 +164,66 @@ When load decreases, pods are scaled down.
 
 This improves availability and efficient resource usage.
 
+
+✅ SECTION 1: Docker Image Build & Push Instructions
+## 🐳 Docker Image Build & Push
+
+To build the Docker image locally, run:
+
+```bash
+docker build -t <docker-username>/flask-mongo-app:latest .
+
+
+To push the image to a container registry (Docker Hub):
+docker login
+docker push <docker-username>/flask-mongo-app:latest
+
+
 ---
+
+---
+
+# ✅ SECTION 2: Design Choices & Alternatives Considered
+
+```md
+## 🧠 Design Choices & Alternatives Considered
+
+### Flask as a Deployment
+Flask is a stateless application, so it was deployed using a Kubernetes Deployment to allow easy scaling and rolling updates.
+
+**Alternative considered:**  
+StatefulSet was not used because Flask does not require stable identity or persistent storage.
+
+### MongoDB as a StatefulSet
+MongoDB requires persistent storage and stable network identity, so it was deployed using a StatefulSet with PersistentVolumeClaims.
+
+**Alternative considered:**  
+Deployment was not chosen because it does not guarantee stable storage or predictable pod identity.
+
+### NodePort Service
+NodePort was used to expose the Flask application externally in Minikube, which does not support cloud LoadBalancer services by default.
+
+**Alternative considered:**  
+LoadBalancer was not used because it requires a cloud provider.
+
+---
+## 🧪 Testing Scenarios & Validation
+
+### Database Interaction Testing
+- Sent POST requests to the `/data` endpoint to insert records into MongoDB.
+- Used GET requests on the `/data` endpoint to retrieve stored records.
+- Verified that data persisted even after MongoDB pod restarts.
+
+### Autoscaling Testing
+- Generated load on the Flask application by sending multiple concurrent requests.
+- Observed CPU utilization crossing the 70% threshold.
+- Verified that the Horizontal Pod Autoscaler increased the number of Flask replicas.
+- Confirmed replicas scaled down automatically when load decreased.
+
+### Issues Encountered
+- Encountered Kubernetes immutability restrictions while updating the MongoDB StatefulSet.
+- Resolved the issue by safely deleting and recreating the StatefulSet while preserving the PersistentVolumeClaim.
+
 
 ## 📊 Resource Requests & Limits
 
