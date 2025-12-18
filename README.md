@@ -150,6 +150,7 @@ This DNS-based communication is a core Kubernetes feature.
 ---
 
 ## 📈 Horizontal Pod Autoscaling (HPA)
+Note: In Minikube, the metrics-server addon must be enabled for HPA to fetch CPU metrics. Once enabled, HPA reads CPU utilization correctly.
 
 Horizontal Pod Autoscaler is configured for the Flask application.
 
